@@ -1,0 +1,92 @@
+항공제어 ROS C++ 코드 중요기능 정리
+
+과제1
+// TODO: regist publisher
+    ros::Publisher local_pos_sp_pub = nh.advertise<geometry_msgs::PoseStamped>
+            ("mavros/setpoint_position/local", 10);
+
+
+fin.open("/home/jongwoo/catkin_ws/src/offboard/src/trajectory");
+    while(fin>>x>>y>>z>>yaw){
+      poses[i].x=x;	
+}	// 경로에 있는 파일을 열어서 poses의 x, y, z, yaw에 대입
+
+
+geometry_msgs::PoseStamped pose;
+    pose.pose.position.x = poses[0].x;			// 첫번째 목적지 설정
+
+for(int i = 100; ros::ok() && i > 0; --i){
+        local_pos_sp_pub.publish(pose);
+        ros::spinOnce();
+        rate.sleep();
+    }
+    // pose를 계속 publish한다
+
+
+
+if(dist(pose, current_pos) < 0.001){ // 목표 지점에 다다르면 다음 목표 지점을 설정
+          j++;
+          ROS_INFO("change: %d", j);
+pose.pose.position.x = poses[j].x;
+
+
+local_pos_sp_pub.publish(pose);
+
+
+과제2
+des_vel.position.x = 2;		//드론을 (2,2,1)로 이동시킨다.
+
+        curr_pos[0]=current_pose.pose.position.x;
+
+
+ROS_INFO("dist: %f",dist(current_pose,des_vel)); //현재 오차 출력한다.
+if(dist(current_pose,des_vel)<0.001){ //지정한 위치에 도달하면 다음좌표로 이동한다.
+            ROS_INFO("end");
+            ready=true;
+        }
+
+
+float dist(geometry_msgs::PoseStamped curr, mavros_msgs::PositionTarget des){
+    return pow((curr.pose.position.x - des.position.x), 2) + pow((curr.pose.position.y - des.position.y),2) + pow((curr.pose.position.z - des.position.z),2) ;
+}		//오차 출력하는 코드
+
+ref_vel=ang_vel.cross(curr_pos);  //현재 위치과 각속도를 외적해서 바디 프레임의 속도를 구한다.
+        ROS_INFO("x%f",ref_vel[0]);  //x축의 바디 프레임 속도
+}
+
+des_vel.velocity.x = ref_vel[0]; 	//계산한 바디 프레임의 속도를 desire 속도에 대입한다.
+
+
+local_pos_sp_pub.publish(des_vel);  //desire 속도를 topic의 형식으로 퍼블리시한다.
+
+
+Eigen::Vector3d ang_vel(0, 0, 1);   //Eigen에 ang_vel변수 선언
+    Eigen::Vector3d curr_pos;   //Eigen에 curr_pos변수 선언
+    Eigen::Vector3d ref_vel;    //Eigen에 ref_vel변수 선언
+
+
+
+추가적으로 알아두면 좋은 코드
+ros::spinOnce(); 		//한 번 도는 코드
+rate.sleep();  		//시간에 맞추려고 넣은 코드
+
+if( arming_client.call(arm_cmd) &&
+                    arm_cmd.response.success){
+                    ROS_INFO("Vehicle armed");      //드론의 시동을 키는 코드
+
+// regist topic and service
+ros::Subscriber state_sub = nh.subscribe<mavros_msgs::State>
+            ("mavros/state", 10, state_cb);
+    ros::Subscriber local_pos_sub = nh.subscribe<geometry_msgs::PoseStamped>
+            ("mavros/local_position/pose", 10, pos_cb);
+    ros::Publisher local_pos_sp_pub = nh.advertise<mavros_msgs::PositionTarget>
+            ("mavros/setpoint_raw/local", 10);
+
+
+void state_cb(const mavros_msgs::State::ConstPtr& msg){
+    current_state = *msg;
+}
+
+void pos_cb(const geometry_msgs::PoseStamped::ConstPtr& msg){
+    current_pose = *msg;
+}								//처음에 선언하는 코드
